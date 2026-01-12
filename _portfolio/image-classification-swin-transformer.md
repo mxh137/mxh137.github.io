@@ -18,12 +18,12 @@
 
 | 原图位置 (Notebook 章节/代码块) | 建议文件名 | 用途 |
 | :--- | :--- | :--- |
-| 性别比例甜甜圈图 | `gender_is_male_donut.png` | 正文插图 |
+| 性别比例圆环图 | `gender_is_male_donut.png` | 正文插图 |
 | 年龄分布直方图 | `age_month_hist.png` | 正文插图 |
-| 住院死亡标志甜甜圈图 | `hospital_expire_flag_donut.png` | 正文插图 |
+| 住院死亡标志圆环图 | `hospital_expire_flag_donut.png` | 正文插图 |
 | 混淆矩阵 | `confusion_matrix.png` | 模型评估 |
 | ROC 曲线 | `roc_curve.png` | 模型评估 |
-| （如果代码中有箱线图） | `lab_indicators_boxplot.png` | 正文插图 |
+
 
 **Markdown 内容生成：**
 
@@ -98,7 +98,7 @@ from sklearn.metrics import (
 
 ### 性别比例分布
 
-![性别比例甜甜圈图](/images/portfolio/picu-data-analysis/gender_is_male_donut.png){: .align-center}
+![性别比例圆环图](/images/portfolio/picu-data-analysis/gender_is_male_donut.png){: .align-center}
 上图展示了数据集中患者的性别比例，有助于了解样本的构成。
 
 ### 年龄分布直方图
@@ -108,13 +108,10 @@ from sklearn.metrics import (
 
 ### 住院死亡标志分布
 
-![住院死亡标志甜甜圈图](/images/portfolio/picu-data-analysis/hospital_expire_flag_donut.png){: .align-center}
+![住院死亡标志圆环图](/images/portfolio/picu-data-analysis/hospital_expire_flag_donut.png){: .align-center}
 该图显示了患者住院期间的死亡比例，是评估模型预测目标的关键指标。
 
-### 关键实验室指标箱线图（如果代码中包含）
 
-![关键实验室指标箱线图](/images/portfolio/picu-data-analysis/lab_indicators_boxplot.png){: .align-center}
-箱线图对比了存活与死亡患者在各项实验室指标上的分布差异，有助于识别潜在的预测因子。
 
 ## 机器学习模型评估
 
