@@ -283,7 +283,7 @@ else:
 
 ### 性别比例分布
 
-![性别比例甜甜圈图](/images/portfolio/picu-outcome-prediction/gender_is_male_donut.png){: .align-center}
+![性别比例圆环图](/images/gender_is_male_donut.png){: .align-center}
 上图展示了数据集中 PICU 患者的性别比例，有助于了解样本的构成。
 
 # ========= 3.2 年龄分布直方图 =========
