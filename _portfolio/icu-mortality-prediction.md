@@ -525,40 +525,33 @@ print(pd.DataFrame(results).round(4))
 #### SVM 模型评估
 
 *   **SVM 混淆矩阵**
-    ![SVM Confusion Matrix](/images/SVM_confusion_matrix.png){: .align-center}
+    <img src="/images/CM_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM Confusion Matrix" style="width: 50%; margin: 0 auto; display: block;">
 
 *   **SVM ROC 曲线**
-    ![SVM ROC Curve](/images/SVM_roc_curve.png){: .align-center}
+    <img src="/images/ROC_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM ROC Curve" style="width: 50%; margin: 0 auto; display: block;">
 
-*   **SVM Precision-Recall 曲线**
-    ![SVM Precision-Recall Curve](/images/SVM_pr_curve.png){: .align-center}
 
 #### Random Forest 模型评估
 
 *   **Random Forest 混淆矩阵**
-    ![RandomForest Confusion Matrix](/images/RF_confusion_matrix.png){: .align-center}
+    <img src="/images/CM_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest Confusion Matrix" style="width: 50%; margin: 0 auto; display: block;">
 
 *   **Random Forest ROC 曲线**
-    ![RandomForest ROC Curve](/images/RF_roc_curve.png){: .align-center}
+    <img src="/images/ROC_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest ROC Curve" style="width: 50%; margin: 0 auto; display: block;">
 
-*   **Random Forest Precision-Recall 曲线**
-    ![RandomForest Precision-Recall Curve](/images/RF_pr_curve.png){: .align-center}
 
 #### XGBoost 模型评估
 
 *   **XGBoost 混淆矩阵**
-    ![XGBoost Confusion Matrix](/images/XGBoost_confusion_matrix.png){: .align-center}
+    <img src="/images/CM_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost Confusion Matrix" style="width: 50%; margin: 0 auto; display: block;">
 
 *   **XGBoost ROC 曲线**
-    ![XGBoost ROC Curve](/images/XGBoost_roc_curve.png){: .align-center}
-
-*   **XGBoost Precision-Recall 曲线**
-    ![XGBoost Precision-Recall Curve](/images/XGBoost_pr_curve.png){: .align-center}
+    <img src="/images/ROC_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost ROC Curve" style="width: 50%; margin: 0 auto; display: block;">
 
 **分析说明**：
 - **混淆矩阵 (Confusion Matrix)**：直观展示了模型在测试集上的分类性能，包括真阳性 (TP)、真阴性 (TN)、假阳性 (FP) 和假阴性 (FN)。
 - **ROC 曲线 (Receiver Operating Characteristic Curve)**：通过绘制真阳性率 (TPR) 对假阳性率 (FPR)，评估模型在不同分类阈值下的性能。曲线下面积 (AUC) 越大，模型性能越好。
-- **Precision-Recall 曲线 (PR Curve)**：对于类别不平衡的数据集，PR 曲线能更好地反映模型的性能。曲线下面积 (AP) 越大，模型性能越好。
+
 
 ---
 
@@ -586,13 +579,6 @@ print(pd.DataFrame(results).round(4))
 
 ---
 
-## 相关链接
-
-- **GitHub 仓库**：[项目代码](https://github.com/mxh137/mxh137.github.io)
-- **数据集说明**：[数据文档](链接)
-- **相关论文**：[文献引用](链接)
-
----
 
 *最后更新：2026-01-13*
 ```
