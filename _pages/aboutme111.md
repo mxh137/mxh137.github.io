@@ -30,26 +30,7 @@ My research is mainly magnetic resonance radio frequency coil, they say that peo
 
 ## 🎨 Hobbies & Interests
 
-### 💻 工作相关（假装是爱好）
-- 🌟 **收集GitHub Stars** - 就像收集宝可梦，但是永远不会真正用
-- 📦 **囤积npm包** - node_modules文件夹大小：即将超越宇宙
-- 🎯 **关闭Chrome标签页** - 当前打开：89个（已经算少了）
-- 🏃 **逃离会议** - 个人记录：连续5个"网络不好"借口
-
-### 🎮 真正的爱好
-- 🎵 **音乐** - 边仿真边听歌，主要是用来掩盖内心的崩溃
-- 🍕 **美食探索** - 外卖App五星级评论家
-- 🏋️ **健身** - 从椅子走到冰箱算吗？
-- 📚 **阅读** - Stack Overflow答案、GitHub Issues、错误日志...都是reading！
-- 🎲 **桌游** - 最喜欢的游戏：俄罗斯方块（因为它教会我错误会累积，完成会消失）
-
-### 🌟 人生目标
-- [ ] 成为j人（预计完成时间：2099年）
-- [ ] 理解正则表达式（已放弃）
-- [ ] 在周五下午5点前完成部署（从未成功）
-- [x] 成为一个会吐槽的程序员 ✅
-
----
+Music Ski Travel Photography, dream is to be able to ski all over the world's snow parks, constantly experiencing and recording.
 
 ## 🛠️ 技术栈 | Tech Stack
 
@@ -76,6 +57,5 @@ My research is mainly magnetic resonance radio frequency coil, they say that peo
 
 <img src="https://media.giphy.com/media/LmNwrBhejkK9EFP504/giphy.gif" width="200"/>
 
-**最后更新**: 刚刚修完一个bug的时候（立刻又出现了一个）
 
 </div>
