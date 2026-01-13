@@ -8,8 +8,6 @@ redirect_from:
   - /about.html
 ---
 
-# 👋 Hello World！
-
 ---
 
 <div align="center">
@@ -20,11 +18,8 @@ redirect_from:
 </a>
 
 </div>
----
 
-## About Me
-
-I am now in the second year of my master's degree at Peking University, and my research direction is medical imaging technology, which is actually hand rubbing all kinds of small devices every day, and I say it is a medical class but actually I am doing electronic work every day, and my research Interest is magnetic resonance equipment.
+  I am now in the second year of my master's degree at Peking University, and my research direction is medical imaging technology, which is actually hand rubbing all kinds of small devices every day, and I say it is a medical class but actually I am doing electronic work every day, and my research Interest is magnetic resonance equipment.
 
 ---
 
