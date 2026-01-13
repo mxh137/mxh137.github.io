@@ -13,11 +13,11 @@ Sorry, but the page you were trying to view does not exist.
 
 <div align="center">
   
-### 🎭 Childless cat lady
-  
-[![Typing SVG](https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=2E9EF7&center=true&vCenter=true&width=435&lines=console.log(%22Hello+World!%22);while(alive)%7B+eat()+%7C%7C+sleep()+%7C%7C+cats()+%7D;404%3A+Social+Life+Not+Found)](https://git.io/typing-svg)
+<h3>🎭 Childless cat lady</h3>
+<a href="https://git.io/typing-svg">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=2E9EF7&center=true&vCenter=true&width=435&lines=console.log(%22Hello+World!%22);while(alive)%7B+eat()+%7C%7C+sleep()+%7C%7C+cats()+%7D;404%3A+Social+Life+Not+Found" alt="Typing SVG" />
+</a>
 
-</div>
 
 ---
 
