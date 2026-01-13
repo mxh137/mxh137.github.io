@@ -1,7 +1,7 @@
 ---
-title: "PICU 患者院内死亡预测与多模型评估"
+title: "ICU 患者院内死亡预测与多模型评估"
 collection: portfolio
-excerpt: "本项目旨在利用儿科重症监护室 (PICU) 患者的临床数据，通过系统的数据清洗、特征工程和探索性数据分析，构建并评估多种机器学习模型（如 SVM, 随机森林, XGBoost）来预测患者的院内死亡风险。项目详细展示了数据预处理流程、关键特征的可视化分析、模型训练与评估指标（AUC-ROC, AUPRC, 混淆矩阵），并深入探讨了 XGBoost 模型的特征重要性（SHAP 值）。"
+excerpt: "本项目旨在利用重症监护室 (ICU) 患者的临床数据，通过系统的数据清洗、特征工程和探索性数据分析，构建并评估多种机器学习模型（如 SVM, 随机森林, XGBoost）来预测患者的院内死亡风险。项目详细展示了数据预处理流程、关键特征的可视化分析、模型训练与评估指标（AUC-ROC, AUPRC, 混淆矩阵），并深入探讨了 XGBoost 模型的特征重要性（SHAP 值）。"
 date: 2026-01-12
 tags:
   - 数据分析
@@ -18,207 +18,146 @@ tags:
 
 ## 项目概述
 
-本项目专注于对儿科重症监护室 (PICU) 患者的临床数据进行深入分析，旨在构建和评估机器学习模型，以预测患者的院内死亡风险。通过对数据的全面处理、探索性分析和多种模型的比较，我们力求提高预测的准确性和可解释性，为临床决策提供支持。
+本项目旨在对儿科重症监护病房（PICU）患者的首24小时临床数据进行全面的分析，包括数据加载、清洗、探索性数据分析（EDA），并搭建机器学习预测模型以识别高风险患者。通过可视化的方式，我们展示了患者的性别、年龄和住院结局等关键特征。在模型构建阶段，我们考虑了多种分类算法，并详细阐述了数据预处理流程和评估方法。
 
-## 1. 数据导入与初步探索
+**数据来源**：`icu_first24hours.csv` 及清洗后的 `icu_first24hours_clean_drop0.4.csv`  
+**分析工具**：Python (pandas, numpy, matplotlib, scikit-learn, xgboost)
 
-项目首先导入所有必需的 Python 库，用于数据处理、机器学习和可视化。接着，加载原始数据集，并进行初步的结构和内容检查。
+---
 
-### 1.1 导入所需库
+## 1. 数据读取
 
+本项目从原始 CSV 文件加载数据，并进行初步的结构检查，以了解数据集的规模和基本构成。
+
+**原始数据路径**：`/wujidata/xdl/ecg_sleep/icu/icu_first24hours.csv`
+
+**代码片段**：
 ```python
 import pandas as pd
 import numpy as np
+import os
+import matplotlib.pyplot as plt
 
+# 导入机器学习相关的包，方便后续使用
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-
+from sklearn.svm import SVC # Support Vector Classifier
 from sklearn.metrics import (
-    roc_auc_score, average_precision_score, accuracy_score, f1_score,
-    confusion_matrix, classification_report, RocCurveDisplay, PrecisionRecallDisplay
+    roc_auc_score, average_precision_score, accuracy_score, precision_score,
+    recall_score, f1_score, confusion_matrix, classification_report,
+    RocCurveDisplay, PrecisionRecallDisplay, ConfusionMatrixDisplay
 )
 
-import matplotlib.pyplot as plt
-import os
-
-### 1.2 检查表格的结构和数据类型
-
-加载 `icu_first24hours.csv` 数据集，查看其维度、前几行数据以及各列的数据类型，以对数据有一个初步的认识。
-
-```python
-# 数据路径（请根据实际环境调整）
+# 数据加载
 path = "/wujidata/xdl/ecg_sleep/icu/icu_first24hours.csv"
 df = pd.read_csv(path)
 
-print(df.shape)
-# display(df.head(3)) # 在Jupyter中会显示表格，这里为了Markdown简洁，省略了
-print(df.head(3)) # 在Markdown中直接打印，方便查看
-print(df.dtypes.head(20))
+print("原始数据形状:", df.shape)
+print("\n数据表头:")
+# display(df.head(3)) # 在实际notebook中会显示前3行
+print("\n前20列数据类型:")
+# print(df.dtypes.head(20)) # 在实际notebook中会显示前20列的数据类型
 ```
 
-### 1.3 缺失数据情况检查与标签分布
+**说明**：
+- 加载原始数据集 `icu_first24hours.csv`。
+- 打印数据集的维度 (`shape`) 和前几行 (`head`)，以便快速预览数据结构和内容。
+- 检查各列的数据类型 (`dtypes`)，有助于发现潜在的数据类型问题。
 
-检查数据集中各列的缺失率，并特别关注目标变量“院内死亡标志”（`HOSPITAL_EXPIRE_FLAG`）的分布情况，这对于后续的数据清洗和模型训练至关重要。
-
-```python
-missing_rate = df.isna().mean().sort_values(ascending=False)
-# display(missing_rate.head(30)) # 在Jupyter中会显示表格，这里为了Markdown简洁，省略了
-print("Top 30 Missing Rates:")
-print(missing_rate.head(30))
-
-# 看看标签分布（以院内死亡为例）
-target = "HOSPITAL_EXPIRE_FLAG"
-print(f"\nValue counts for target '{target}':")
-print(df[target].value_counts(dropna=False))
-print("Positive rate:", df[target].mean())
-```
+---
 
 ## 2. 数据预处理
 
-数据预处理是构建健壮机器学习模型的关键步骤，包括处理缺失值、去除重复项和低信息列。本节详细介绍了清洗策略。
+数据预处理是确保模型性能和数据质量的关键步骤。本节涵盖了缺失值检查、列名清洗、时间列处理、重复值处理以及高缺失率列的删除。
 
+**代码片段**：
 ```python
-# ========= 你需要改的参数 =========
-# path = "/wujidata/xdl/ecg_sleep/icu/icu_first24hours.csv" # 路径已在前面定义
-
-# 缺失率超过该阈值的列直接丢弃（建议 0.4~0.7 之间试一下）
-col_missing_thresh = 0.4
-
-# 你后续可能要预测的标签：建议至少保留 HOSPITAL_EXPIRE_FLAG 不缺失的行
-target_cols = ["HOSPITAL_EXPIRE_FLAG", "is_early_death"]
-
-# 是否去重（按一次住院 HADM_ID 保留第一条）
-dedup_by_hadm = True
+# ========= 配置区 =========
+path = "/wujidata/xdl/ecg_sleep/icu/icu_first24hours.csv"
+col_missing_thresh = 0.4  # 缺失率超过该阈值的列直接丢弃
+target_cols = ["HOSPITAL_EXPIRE_FLAG", "is_early_death"] # 目标列，建议保留不缺失的行
+dedup_by_hadm = True      # 是否去重（按 HADM_ID 保留第一条）
+out_dir = "/wujidata/xdl/ecg_sleep/icu"
+os.makedirs(out_dir, exist_ok=True)
+clean_output_path = os.path.join(out_dir, f"icu_first24hours_clean_drop{col_missing_thresh}.csv")
 # =================================
 
-
-# 1) 读取（已在前面完成）
-# df = pd.read_csv(path)
-print("Raw shape:", df.shape)
+# 1) 缺失数据情况检查
+print("\n缺失率（前30列）:")
+missing_rate = df.isna().mean().sort_values(ascending=False)
+# display(missing_rate.head(30)) # 在实际notebook中会显示前30列的缺失率
 
 # 2) 基础清洗：列名去空格、时间解析、inf->nan
 df.columns = [c.strip() for c in df.columns]
 if "ADMITTIME" in df.columns:
     df["ADMITTIME"] = pd.to_datetime(df["ADMITTIME"], errors="coerce")
-
 df = df.replace([np.inf, -np.inf], np.nan)
 
-# 3) 去重（可选）
+# 3) 去重 (可选)
 if dedup_by_hadm and "HADM_ID" in df.columns:
     before = df.shape[0]
     df = df.drop_duplicates(subset=["HADM_ID"], keep="first")
-    print(f"Dedup by HADM_ID: {before} -> {df.shape[0]}")
+    print(f"按 HADM_ID 去重: {before} -> {df.shape[0]} 行")
 
-# 4) 处理标签缺失（强烈建议：至少保证你要预测的标签不缺失）
-# 这里默认：如果 HOSPITAL_EXPIRE_FLAG 存在，就要求它不缺失；否则要求 is_early_death 不缺失
-if "HOSPITAL_EXPIRE_FLAG" in df.columns:
-    before = df.shape[0]
-    df = df.dropna(subset=["HOSPITAL_EXPIRE_FLAG"])
-    print(f"Drop rows with missing HOSPITAL_EXPIRE_FLAG: {before} -> {df.shape[0]}")
-elif "is_early_death" in df.columns:
-    before = df.shape[0]
-    df = df.dropna(subset=["is_early_death"])
-    print(f"Drop rows with missing is_early_death: {before} -> {df.shape[0]}")
-
-# 5) 计算每列缺失率，并删除缺失率太高的列
+# 4) 计算缺失率并删除高缺失列
 missing_rate = df.isna().mean().sort_values(ascending=False)
+cols_to_drop = missing_rate[missing_rate > col_missing_thresh].index.tolist()
+df_cleaned = df.drop(columns=cols_to_drop)
+print(f"删除缺失率 > {col_missing_thresh*100}% 的列: {len(cols_to_drop)} 列")
 
-# 额外规则：全缺失列直接删
-all_missing_cols = missing_rate[missing_rate >= 1.0].index.tolist()
+# 5) 删除目标列缺失的行 (根据需要)
+for t_col in target_cols:
+    if t_col in df_cleaned.columns:
+        before = df_cleaned.shape[0]
+        df_cleaned = df_cleaned.dropna(subset=[t_col])
+        print(f"删除 '{t_col}' 缺失的行: {before} -> {df_cleaned.shape[0]} 行")
 
-# 按阈值删列
-drop_cols_by_missing = missing_rate[missing_rate > col_missing_thresh].index.tolist()
-
-drop_cols = sorted(set(all_missing_cols + drop_cols_by_missing))
-
-print(f"Columns to drop (missing>{col_missing_thresh}): {len(drop_cols)}")
-print("Top-20 missing columns:")
-print(missing_rate.head(20))
-
-df_reduced = df.drop(columns=drop_cols)
-print("After dropping high-missing cols shape:", df_reduced.shape)
-
-# 6) 再做一点“低信息列”处理（可选但很实用）
-# 6.1) 删除常数列（nunique<=1，且忽略缺失）
-nunique = df_reduced.nunique(dropna=True)
-const_cols = nunique[nunique <= 1].index.tolist()
-if len(const_cols) > 0:
-    df_reduced = df_reduced.drop(columns=const_cols)
-print(f"Constant columns dropped: {len(const_cols)}")
-print("Shape after dropping constant cols:", df_reduced.shape)
-
-# 7) 插补：数值列 median；非数值列 most_frequent
-# 注意：ADMITTIME 是 datetime，这里我们不插补它（你也可以选择删掉）
-datetime_cols = df_reduced.select_dtypes(include=["datetime64[ns]"]).columns.tolist()
-if len(datetime_cols) > 0:
-    print("Datetime columns (kept as-is, not imputed):", datetime_cols)
-
-# 只对非 datetime 做插补
-cols_to_impute = [c for c in df_reduced.columns if c not in datetime_cols]
-
-num_cols = df_reduced[cols_to_impute].select_dtypes(include=[np.number]).columns.tolist()
-cat_cols = [c for c in cols_to_impute if c not in num_cols]
-
-num_imputer = SimpleImputer(strategy="median")
-cat_imputer = SimpleImputer(strategy="most_frequent")
-
-df_imputed = df_reduced.copy()
-
-if len(num_cols) > 0:
-    df_imputed[num_cols] = num_imputer.fit_transform(df_reduced[num_cols])
-
-if len(cat_cols) > 0:
-    df_imputed[cat_cols] = cat_imputer.fit_transform(df_reduced[cat_cols])
-
-# 8) 最终检查：NaN / inf
-df_imputed = df_imputed.replace([np.inf, -np.inf], np.nan)
-
-na_total = df_imputed.isna().sum().sum()
-inf_total = np.isinf(df_imputed.select_dtypes(include=[np.number]).to_numpy()).sum()
-
-print("\n===== Final Check =====")
-print("Final shape:", df_imputed.shape)
-print("Total NaN after imputation:", na_total)
-print("Total inf after imputation:", inf_total)
-
-# 如果你要求“严格 0 缺失”，这里直接 assert
-assert na_total == 0, f"Still has NaN: {na_total}"
-assert inf_total == 0, f"Still has inf: {inf_total}"
-print("✅ No missing values and no infinities.")
-
-# 9) 保存清洗后的数据
-out_path = path.replace(".csv", f"_clean_drop{col_missing_thresh}.csv")
-df_imputed.to_csv(out_path, index=False)
-print("Saved to:", out_path)
+# 6) 保存清洗后的数据
+df_cleaned.to_csv(clean_output_path, index=False)
+print("清洗后的数据已保存至:", clean_output_path)
+print("清洗后数据形状:", df_cleaned.shape)
 ```
 
-## 3. 统计分析与可视化
+**说明**：
+- **缺失率检查**：识别数据集中缺失值较多的列，为后续处理提供依据。
+- **列名标准化**：去除列名中的冗余空格，确保后续操作的便捷性。
+- **时间列解析**：将 `ADMITTIME` 转换为日期时间格式，便于时间序列分析。
+- **异常值处理**：将 `np.inf` 和 `-np.inf` 替换为 `np.nan`，以便统一处理缺失值。
+- **重复值处理**：根据 `HADM_ID` 去重，确保每个住院记录的唯一性。
+- **高缺失率列删除**：移除缺失率过高的列，减少噪音并提高模型效率。
+- **目标列缺失值处理**：删除目标变量（如 `HOSPITAL_EXPIRE_FLAG`）缺失的行，确保模型训练数据的完整性。
+- **保存清洗后数据**：将清洗后的数据保存到 `icu_first24hours_clean_drop0.4.csv`，方便后续步骤直接使用。
 
-本节通过可视化手段对清洗后的数据进行探索性分析，以揭示关键变量的分布和特征。
+---
 
+## 3. 统计分析 (探索性数据可视化)
+
+通过可视化图表直观展示清洗后数据中关键变量的分布情况，以更好地理解患者群体的特征。
+
+**数据源**：`icu_first24hours_clean_drop0.4.csv`
+
+### 3.1 通用圆环图函数 (`donut_plot`)
+
+为了生成美观且信息丰富的圆环图，我们定义了一个可重用的 `donut_plot` 函数，该函数允许自定义圆环厚度、百分比和标签的位置。
+
+**代码片段**：
 ```python
-# ========= 路径 =========
-clean_path = "/wujidata/xdl/ecg_sleep/icu/icu_first24hours_clean_drop0.4.csv"
-out_dir = "/wujidata/xdl/ecg_sleep/icu"   # 保存目录
-os.makedirs(out_dir, exist_ok=True)
+# (假设 df_cleaned 已加载，out_dir 已定义)
 
-df = pd.read_csv(clean_path)
-
-# ========= 通用：圆环图函数（百分比在圆环上） =========
 def donut_plot(counts, labels, title, save_path, dpi=600,
                ring_width=0.40, pctdistance=0.82, labeldistance=1.12,
                min_pct_to_show=0.0):
     """
-    ring_width: 圆环厚度（0~1），越大越厚
-    pctdistance: 百分比文本距离圆心的比例（外半径=1），要落在圆环上，应在(1-ring_width, 1)之间
+    生成高质量圆环图，百分比在圆环上。
+    ring_width: 圆环厚度 (0~1)，越大越厚
+    pctdistance: 百分比文本距离圆心的比例 (外半径=1)，应在 (1-ring_width, 1) 之间
     labeldistance: 标签离圆心距离
-    min_pct_to_show: 小于该百分比则不显示（避免挤）
+    min_pct_to_show: 小于该百分比则不显示
     """
     counts = np.array(counts, dtype=float)
     total = counts.sum()
@@ -229,73 +168,76 @@ def donut_plot(counts, labels, title, save_path, dpi=600,
         return f"{pct:.1f}%"
 
     fig, ax = plt.subplots(figsize=(6.5, 6.5))
-
     wedges, texts, autotexts = ax.pie(
         counts,
         labels=labels,
         autopct=autopct_fmt,
         startangle=90,
-        pctdistance=pctdistance,        # ✅ 关键：百分比放到圆环上
+        pctdistance=pctdistance,
         labeldistance=labeldistance,
         wedgeprops=dict(width=ring_width, edgecolor="white"),
         textprops=dict(fontsize=12)
     )
 
-    # 让百分比字体更清晰一点
     for t in autotexts:
         t.set_fontsize(12)
 
     ax.set_title(title, fontsize=16)
     ax.axis("equal")
-
-    # 中心写总数 N
     ax.text(0, 0, f"N={int(total)}", ha="center", va="center", fontsize=14)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print("Saved:", save_path)
+```
 
-# ========= 3.1 性别比例圆环图 =========
-if "gender_is_male" in df.columns:
-    g = df["gender_is_male"].astype(int).value_counts().sort_index()
+### 3.2 性别分布分析 (`gender_is_male`)
 
+<img src="/images/gender_is_male_donut.png" alt="性别比例圆环图" style="width: 50%; margin: 0 auto; display: block;">
+
+**代码片段**：
+```python
+# (假设 df_cleaned 已加载，out_dir 已定义)
+if "gender_is_male" in df_cleaned.columns:
+    g = df_cleaned["gender_is_male"].astype(int).value_counts().sort_index()
     if set(g.index).issubset({0, 1}):
         labels = ["Female (0)", "Male (1)"]
         counts = [g.get(0, 0), g.get(1, 0)]
     else:
         labels = [str(i) for i in g.index]
         counts = g.values
-
     donut_plot(
         counts=counts,
         labels=labels,
         title="Gender Distribution (gender_is_male)",
         save_path=os.path.join(out_dir, "gender_is_male_donut.png"),
         dpi=600,
-        ring_width=0.40,
-        pctdistance=0.82,        # ✅ 百分比在圆环上
-        labeldistance=1.12,
-        min_pct_to_show=0.0      # 如想隐藏很小扇区，比如2%以下：改成 2.0
+        ring_width=0.40, pctdistance=0.82, labeldistance=1.12, min_pct_to_show=0.0
     )
 else:
     print("Column not found: gender_is_male")
+```
 
-### 性别比例分布
+**分析说明**：
+- 该圆环图清晰展示了 PICU 患者的性别构成，其中 `Female (0)` 为女性，`Male (1)` 为男性。
+- 性别分布有助于理解患者群体的基本人口学特征。
 
-![性别比例圆环图](/images/gender_is_male_donut.png){: .align-center}
-上图展示了数据集中 PICU 患者的性别比例，有助于了解样本的构成。
+### 3.3 年龄分布分析 (`age_month`)
 
-# ========= 3.2 年龄分布直方图 =========
-if "age_month" in df.columns:
-    age = pd.to_numeric(df["age_month"], errors="coerce").dropna()
+<img src="/images/age_month_hist.png" alt="年龄分布直方图" style="width: 50%; margin: 0 auto; display: block;">
 
+
+**代码片段**：
+```python
+# (假设 df_cleaned 已加载，out_dir 已定义)
+if "age_month" in df_cleaned.columns:
+    age = pd.to_numeric(df_cleaned["age_month"], errors="coerce").dropna()
     fig, ax = plt.subplots(figsize=(7.5, 5.5))
     ax.hist(age, bins=30, edgecolor="black")
     ax.set_title("Age Distribution (months)", fontsize=16)
     ax.set_xlabel("age_month", fontsize=12)
     ax.set_ylabel("Count", fontsize=12)
-
     plt.tight_layout()
     save_path = os.path.join(out_dir, "age_month_hist.png")
     plt.savefig(save_path, dpi=600, bbox_inches="tight")
@@ -303,176 +245,190 @@ if "age_month" in df.columns:
     print("Saved:", save_path)
 else:
     print("Column not found: age_month")
+```
 
-### 年龄分布直方图
+**分析说明**：
+- 直方图展示了 PICU 患者的月龄分布，横轴为月龄，纵轴为患者数量。
+- 通过 30 个分箱，可以观察到不同月龄段患者的集中趋势和分布特征。
 
-![年龄分布直方图](/images/portfolio/picu-outcome-prediction/age_month_hist.png){: .align-center}
-直方图展示了 PICU 患者的年龄（以月为单位）分布，揭示了患者群体的年龄特征。
+### 3.4 住院结局分析 (`HOSPITAL_EXPIRE_FLAG`)
 
-# ========= 3.3 住院死亡标志圆环图 =========
-if "HOSPITAL_EXPIRE_FLAG" in df.columns:
-    y = df["HOSPITAL_EXPIRE_FLAG"].astype(int).value_counts().sort_index()
+<img src="/images/hospital_expire_flag_donut.png" alt="住院结局圆环图" style="width: 50%; margin: 0 auto; display: block;">
 
+**代码片段**：
+```python
+# (假设 df_cleaned 已加载，out_dir 已定义)
+if "HOSPITAL_EXPIRE_FLAG" in df_cleaned.columns:
+    y = df_cleaned["HOSPITAL_EXPIRE_FLAG"].astype(int).value_counts().sort_index()
     if set(y.index).issubset({0, 1}):
         labels = ["Alive (0)", "Expired (1)"]
         counts = [y.get(0, 0), y.get(1, 0)]
     else:
         labels = [str(i) for i in y.index]
         counts = y.values
-
     donut_plot(
         counts=counts,
         labels=labels,
         title="Hospital Outcome (HOSPITAL_EXPIRE_FLAG)",
         save_path=os.path.join(out_dir, "hospital_expire_flag_donut.png"),
         dpi=600,
-        ring_width=0.40,
-        pctdistance=0.82,        # ✅ 百分比在圆环上
-        labeldistance=1.12,
-        min_pct_to_show=0.0
+        ring_width=0.40, pctdistance=0.82, labeldistance=1.12, min_pct_to_show=0.0
     )
 else:
     print("Column not found: HOSPITAL_EXPIRE_FLAG")
-
-### 住院死亡标志分布
-
-![住院死亡标志甜甜圈图](/images/portfolio/picu-outcome-prediction/hospital_expire_flag_donut.png){: .align-center}
-该图显示了患者住院期间的死亡比例，是评估模型预测目标的关键指标。
 ```
+
+**分析说明**：
+- 该圆环图直观地呈现了 PICU 患者的住院结局分布，其中 `Alive (0)` 表示存活，`Expired (1)` 表示死亡。
+- 这是评估 PICU 医疗质量和患者预后的重要指标。
+
+---
 
 ## 4. 预测模型建立
 
-本节将数据划分为训练集和测试集，并对数据进行进一步预处理（插补和标准化），然后定义并初始化多种机器学习模型用于院内死亡预测。
+本节详细介绍了机器学习模型的构建过程，包括数据集的切分、针对不同模型类型的特征预处理以及多种分类模型的定义。
 
+**数据源**：`icu_first24hours_clean_drop0.4.csv`
+
+### 4.1 数据集切分
+
+我们将清洗后的数据划分为特征集 ($$X$$) 和目标变量 ($$y$$)，并进一步切分为训练集和测试集，采用分层抽样以保持类别比例。
+
+**代码片段**：
 ```python
-# ===================== 配置区 =====================
-clean_path = "/wujidata/xdl/ecg_sleep/icu/icu_first24hours_clean_drop0.4.csv"
-target = "HOSPITAL_EXPIRE_FLAG"
-random_state = 42
-test_size = 0.2
+# (假设 clean_output_path, target, random_state, test_size 已定义)
+df_cleaned = pd.read_csv(clean_output_path) # 重新加载清洗后的数据
 
-out_dir = "/wujidata/xdl/ecg_sleep/icu/ml_outputs"
-os.makedirs(out_dir, exist_ok=True)
-
-# ===================== 读取数据 =====================
-df = pd.read_csv(clean_path)
-
-# 时间列仅用于信息，不参与特征
-if "ADMITTIME" in df.columns:
+# 时间列处理（不参与特征）
+if "ADMITTIME" in df_cleaned.columns:
     try:
-        df["ADMITTIME"] = pd.to_datetime(df["ADMITTIME"], errors="coerce")
+        df_cleaned["ADMITTIME"] = pd.to_datetime(df_cleaned["ADMITTIME"], errors="coerce")
     except Exception:
         pass
 
-# ===================== 构建 X / y =====================
-if target not in df.columns:
+# 构建 X / y
+if target not in df_cleaned.columns:
     raise ValueError(f"找不到 target 列：{target}")
 
-id_time_cols = [c for c in ["SUBJECT_ID", "HADM_ID", "ADMITTIME"] if c in df.columns]
+id_time_cols = [c for c in ["SUBJECT_ID", "HADM_ID", "ADMITTIME"] if c in df_cleaned.columns]
 drop_cols = set(id_time_cols + [target])
 
-feature_cols = [c for c in df.columns if c not in drop_cols]
-X = df[feature_cols].copy()
-y = df[target].astype(int).copy()
+feature_cols = [c for c in df_cleaned.columns if c not in drop_cols]
+X = df_cleaned[feature_cols].copy()
+y = df_cleaned[target].astype(int).copy()
 
 if y.nunique() < 2:
     raise ValueError(f"{target} 只有一个类别，无法做二分类。")
 
-print(f"Dataset: X={X.shape}, positive rate={y.mean():.4f}")
+print(f"数据集形状: X={X.shape}, 正例比例={y.mean():.4f}")
 
-# ===================== 切分训练集和测试集 =====================
+# 数据集切分 (分层抽样)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=test_size, random_state=random_state, stratify=y
 )
-print(f"Train/Test split: X_train={X_train.shape}, y_train={y_train.shape}")
-print(f"X_test={X_test.shape}, y_test={y_test.shape}")
+print(f"训练集: {X_train.shape}, 测试集: {X_test.shape}")
+```
 
-# ===================== 预处理数据 =====================
-# Tree 模型：只插补（更适合解释 + SHAP）
-imputer_tree = SimpleImputer(strategy="median")
+### 4.2 特征预处理
+
+根据不同的模型需求，我们对数据进行缺失值插补和标准化处理。
+
+**代码片段**：
+```python
+# (假设 X_train, X_test, feature_cols 已切分)
+
+# Tree 模型预处理 (只插补)
+imputer_tree = SimpleImputer(strategy="median") # 使用中位数插补
 X_train_imp = imputer_tree.fit_transform(X_train)
 X_test_imp  = imputer_tree.transform(X_test)
 
 X_train_imp_df = pd.DataFrame(X_train_imp, columns=feature_cols)
 X_test_imp_df  = pd.DataFrame(X_test_imp,  columns=feature_cols)
+print(f"树模型插补后训练集形状: {X_train_imp_df.shape}")
 
-# SVM：插补 + 标准化
+# SVM/线性模型预处理 (插补 + 标准化)
 scaler = StandardScaler()
 X_train_svm = scaler.fit_transform(X_train_imp_df)
 X_test_svm  = scaler.transform(X_test_imp_df)
-print("Data imputation and scaling completed.")
+print(f"SVM模型标准化后训练集形状: {X_train_svm.shape}")
+```
 
-# ===================== 模型定义 =====================
-# SVM 模型
+**说明**：
+- **树模型预处理**：对于决策树、随机森林等对特征尺度不敏感的模型，通常只需进行缺失值插补。这里采用中位数插补。
+- **SVM/线性模型预处理**：对于支持向量机、逻辑回归等对特征尺度敏感的模型，除了缺失值插补外，还需要进行特征标准化。这里采用 `StandardScaler` 进行标准化。
+
+### 4.3 预测模型定义
+
+我们定义了多种分类模型，包括支持向量机 (SVM)、随机森林 (RandomForest) 和梯度提升机 (XGBoost)，并针对类别不平衡问题进行了 `class_weight` 或 `scale_pos_weight` 的设置。
+
+**代码片段**：
+```python
+# (假设 y_train, random_state 已定义)
+
+# SVM
 svm = SVC(
     kernel="rbf", C=1.0, gamma="scale",
-    probability=True,
-    class_weight="balanced",
+    probability=True, # 允许输出概率
+    class_weight="balanced", # 处理类别不平衡
     random_state=random_state
 )
-print("SVM model initialized.")
 
-# 随机森林 (Random Forest) 模型
+# Random Forest
 rf = RandomForestClassifier(
-    n_estimators=500,
+    n_estimators=500, # 决策树数量
     random_state=random_state,
-    n_jobs=-1,
-    class_weight="balanced"
+    n_jobs=-1, # 使用所有核心并行计算
+    class_weight="balanced" # 处理类别不平衡
 )
-print("Random Forest model initialized.")
 
-# XGBoost 模型
+# XGBoost
 try:
     from xgboost import XGBClassifier
-except Exception as e:
-    print(
+except ImportError as e:
+    raise ImportError(
         f"未检测到 xgboost，请先安装：pip install xgboost 或 conda install -c conda-forge xgboost\n原始报错：{e}"
     )
-    # 如果没有安装xgboost，则将其从模型列表中移除
-    xgb = None
 
-if xgb:
-    pos_ratio = y_train.mean()
-    scale_pos_weight = (1 - pos_ratio) / pos_ratio  # neg/pos
+pos_ratio = y_train.mean()
+scale_pos_weight = (1 - pos_ratio) / pos_ratio  # 计算负样本/正样本比例，用于处理类别不平衡
 
-    xgb = XGBClassifier(
-        n_estimators=600,
-        max_depth=4,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        reg_lambda=1.0,
-        min_child_weight=1,
-        objective="binary:logistic",
-        eval_metric="logloss",
-        tree_method="hist",
-        scale_pos_weight=scale_pos_weight,
-        random_state=random_state,
-        n_jobs=-1
-    )
-    print("XGBoost model initialized.")
+xgb = XGBClassifier(
+    objective="binary:logistic", # 二分类逻辑回归
+    n_estimators=500,
+    learning_rate=0.05,
+    max_depth=5,
+    subsample=0.7,
+    colsample_bytree=0.7,
+    use_label_encoder=False, # 禁用旧的标签编码器警告
+    eval_metric="logloss", # 评估指标
+    scale_pos_weight=scale_pos_weight, # 处理类别不平衡
+    random_state=random_state,
+    n_jobs=-1
+)
 
-
-# 统一管理所有模型及其对应的输入数据类型
+# 统一管理模型及其对应的预处理类型
 models = {
-    "SVM": ("svm", svm),
-    "RF": ("tree", rf),
+    "SVM": ("svm", svm), # SVM 使用标准化数据
+    "RF": ("tree", rf), # 随机森林使用插补后的数据
+    "XGBoost": ("tree", xgb) # XGBoost 使用插补后的数据
 }
-if xgb: # 如果xgboost成功初始化，则添加到模型列表
-    models["XGBoost"] = ("tree", xgb)
-
-print("All models defined and ready for training.")
 ```
+
+---
 
 ## 5. 预测模型评估与可视化
 
-本节对训练好的模型进行评估，计算各项性能指标（如 ROC-AUC, AUPRC, 准确率, F1 分数），并生成 ROC 曲线、PR 曲线和混淆矩阵等可视化图表，最后分析 XGBoost 模型的特征重要性。
+本节详细介绍了如何评估训练好的模型，包括性能指标的计算和关键评估曲线的绘制。
 
+### 5.1 性能指标计算函数 (`compute_metrics`)
+
+我们定义了一个函数来计算分类模型的各种性能指标，包括 ROC AUC、PR AUC、准确率、精确率、召回率和 F1 分数。
+
+**代码片段**：
 ```python
-# ===================== 训练 / 评估 / 画图保存 =====================
+# (假设 y_true, y_prob 已定义)
 def compute_metrics(y_true, y_prob, thr=0.5):
-    """计算模型评估指标"""
-    y_pred = (y_prob >= thr).astype(int)
+    y_pred = (y_prob >= thr).astype(int) # 根据阈值进行分类预测
     return {
         "roc_auc": roc_auc_score(y_true, y_prob),
         "pr_auc": average_precision_score(y_true, y_prob),
@@ -481,189 +437,162 @@ def compute_metrics(y_true, y_prob, thr=0.5):
         "recall": recall_score(y_true, y_pred, zero_division=0),
         "f1": f1_score(y_true, y_pred, zero_division=0),
     }, y_pred
+```
 
-results = []
-probas = {}
-preds = {}
+### 5.2 模型训练、预测与评估循环
+
+我们将遍历定义好的所有模型，进行训练、预测，并计算性能指标。
+
+**代码片段**：
+```python
+# (假设 models, X_train_svm, X_test_svm, X_train_imp_df, X_test_imp_df, y_train, y_test, out_dir 已定义)
+
+results = [] # 存储所有模型的评估结果
+probas = {}  # 存储所有模型的预测概率
+preds = {}   # 存储所有模型的预测类别
 
 for name, (ptype, clf) in models.items():
-    print(f"\n--- Training and evaluating {name} ---")
+    print(f"\n--- 训练和评估模型: {name} ---")
+
     # fit + predict proba
     if ptype == "svm":
         clf.fit(X_train_svm, y_train)
-        y_prob = clf.predict_proba(X_test_svm)[:, 1]
-    else: # For tree-based models like RF, XGBoost
+        y_prob = clf.predict_proba(X_test_svm)[:, 1] # 获取正类的预测概率
+    else: # 树模型
         clf.fit(X_train_imp_df, y_train)
         y_prob = clf.predict_proba(X_test_imp_df)[:, 1]
 
+    # 计算评估指标
+    metrics, y_pred = compute_metrics(y_test, y_prob)
+    results.append({"model": name, **metrics})
     probas[name] = y_prob
-
-    mets, y_pred = compute_metrics(y_test.values, y_prob, thr=0.5)
     preds[name] = y_pred
 
-    results.append({"target": target, "model": name, **mets})
+    print(f"{name} 评估结果:")
+    print(pd.DataFrame([metrics]).round(4))
 
-    print(f"\n=== {name} Performance ===")
-    for k, v in mets.items():
-        print(f"{k}: {v:.6f}")
-
-    # --------- 5.1 单模型 ROC 曲线图保存 ---------
-    fig, ax = plt.subplots(figsize=(7, 6))
-    RocCurveDisplay.from_predictions(y_test, y_prob, name=f"{name} (AUC={mets['roc_auc']:.3f})", ax=ax)
-    ax.plot([0, 1], [0, 1], linestyle="--")
-    ax.set_title(f"ROC Curve - {name} ({target})")
+    # 保存混淆矩阵
+    cm = confusion_matrix(y_test, y_pred)
+    disp_cm = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Alive", "Expired"])
+    fig_cm, ax_cm = plt.subplots(figsize=(6, 6))
+    disp_cm.plot(ax=ax_cm, cmap="Blues")
+    ax_cm.set_title(f"{name} Confusion Matrix")
     plt.tight_layout()
-    roc_path = os.path.join(out_dir, f"ROC_{name}_{target}.png")
-    plt.savefig(roc_path, dpi=600, bbox_inches="tight")
-    plt.close(fig)
-    print("Saved:", roc_path)
+    plt.savefig(os.path.join(out_dir, f"{name}_confusion_matrix.png"), dpi=300)
+    plt.close(fig_cm)
+    print(f"Saved: {name}_confusion_matrix.png")
 
-    # --------- 5.2 单模型 PR 曲线图保存 ---------
-    fig, ax = plt.subplots(figsize=(7, 6))
-    PrecisionRecallDisplay.from_predictions(y_test, y_prob, name=f"{name} (AP={mets['pr_auc']:.3f})", ax=ax)
-    ax.set_title(f"PR Curve - {name} ({target})")
-    plt.tight_layout()
-    pr_path = os.path.join(out_dir, f"PR_{name}_{target}.png")
-    plt.savefig(pr_path, dpi=600, bbox_inches="tight")
-    plt.close(fig)
-    print("Saved:", pr_path)
-
-    # --------- 5.3 单模型混淆矩阵（蓝色色调）---------
-    fig, ax = plt.subplots(figsize=(5.8, 5.2))
-    ConfusionMatrixDisplay.from_predictions(
-        y_test, y_pred,
-        display_labels=[0, 1],
-        values_format="d",
-        cmap="Blues",   # ✅ 蓝色调
-        ax=ax
+    # 保存 ROC 曲线
+    disp_roc = RocCurveDisplay.from_estimator(
+        clf,
+        (X_test_svm if ptype == "svm" else X_test_imp_df),
+        y_test,
+        name=name
     )
-    ax.set_title(f"Confusion Matrix - {name} ({target})")
+    fig_roc, ax_roc = plt.subplots(figsize=(7, 7))
+    disp_roc.plot(ax=ax_roc)
+    ax_roc.set_title(f"{name} ROC Curve")
+    plt.grid(linestyle="--")
     plt.tight_layout()
-    cm_path = os.path.join(out_dir, f"CM_{name}_{target}.png")
-    plt.savefig(cm_path, dpi=600, bbox_inches="tight")
-    plt.close(fig)
-    print("Saved:", cm_path)
+    plt.savefig(os.path.join(out_dir, f"{name}_roc_curve.png"), dpi=300)
+    plt.close(fig_roc)
+    print(f"Saved: {name}_roc_curve.png")
 
-print("\n--- Model evaluation complete ---")
-# ===================== 保存指标表 =====================
-res_df = pd.DataFrame(results).sort_values("roc_auc", ascending=False)
-metrics_csv = os.path.join(out_dir, f"metrics_{target}.csv")
-res_df.to_csv(metrics_csv, index=False)
-print("\nSaved metrics to:", metrics_csv)
-
-### 5.4 各模型评估结果一览
-
-以下表格汇总了 SVM、随机森林和 XGBoost 模型在测试集上的关键评估指标：
-
-| Model     | ROC AUC  | PR AUC   | Accuracy | Precision | Recall   | F1-Score |
-| :-------- | :------- | :------- | :------- | :-------- | :------- | :------- |
-| SVM       | {{ svm_roc_auc }} | {{ svm_pr_auc }} | {{ svm_acc }} | {{ svm_precision }} | {{ svm_recall }} | {{ svm_f1 }} |
-| RF        | {{ rf_roc_auc }} | {{ rf_pr_auc }} | {{ rf_acc }} | {{ rf_precision }} | {{ rf_recall }} | {{ rf_f1 }} |
-| XGBoost   | {{ xgb_roc_auc }} | {{ xgb_pr_auc }} | {{ xgb_acc }} | {{ xgb_precision }} | {{ xgb_recall }} | {{ xgb_f1 }} |
-
-_注：上述表格中的 `{{...}}` 占位符在实际生成时将替换为具体的数值。_
-
-### 5.5 模型评估可视化
-
-#### SVM 模型
-
-![SVM ROC 曲线](/images/portfolio/picu-outcome-prediction/roc_svm.png){: .align-center}
-_SVM 模型的 ROC 曲线_
-
-![SVM PR 曲线](/images/portfolio/picu-outcome-prediction/pr_svm.png){: .align-center}
-_SVM 模型的 PR 曲线_
-
-![SVM 混淆矩阵](/images/portfolio/picu-outcome-prediction/cm_svm.png){: .align-center}
-_SVM 模型的混淆矩阵_
-
-#### 随机森林模型
-
-![随机森林 ROC 曲线](/images/portfolio/picu-outcome-prediction/roc_rf.png){: .align-center}
-_随机森林模型的 ROC 曲线_
-
-![随机森林 PR 曲线](/images/portfolio/picu-outcome-prediction/pr_rf.png){: .align-center}
-_随机森林模型的 PR 曲线_
-
-![随机森林混淆矩阵](/images/portfolio/picu-outcome-prediction/cm_rf.png){: .align-center}
-_随机森林模型的混淆矩阵_
-
-#### XGBoost 模型
-
-![XGBoost ROC 曲线](/images/portfolio/picu-outcome-prediction/roc_xgboost.png){: .align-center}
-_XGBoost 模型的 ROC 曲线_
-
-![XGBoost PR 曲线](/images/portfolio/picu-outcome-prediction/pr_xgboost.png){: .align-center}
-_XGBoost 模型的 PR 曲线_
-
-![XGBoost 混淆矩阵](/images/portfolio/picu-outcome-prediction/cm_xgboost.png){: .align-center}
-_XGBoost 模型的混淆矩阵_
-
-### 5.6 XGBoost：SHAP 与特征重要性分析
-
-为了深入理解模型的决策过程，我们对表现良好的 XGBoost 模型进行了 SHAP 值分析，以揭示最重要的预测特征。
-
-```python
-# ===================== XGBoost：SHAP + Top10 特征重要性 =====================
-# 说明：需要 shap 包：pip install shap
-try:
-    import shap
-except Exception as e:
-    print(f"未检测到 shap，请先安装：pip install shap\n原始报错：{e}")
-    shap = None # 如果shap未安装，则跳过后续分析
-
-if xgb and shap: # 确保xgb和shap都已安装并初始化
-    xgb_clf = xgb  # 已训练
-    # 采样一部分数据做 SHAP（加速）
-    n_shap = min(2000, len(X_test_imp_df))
-    X_shap = X_test_imp_df.sample(n=n_shap, random_state=random_state)
-
-    explainer = shap.TreeExplainer(xgb_clf)
-    shap_values = explainer.shap_values(X_shap)
-
-    # 1) SHAP summary top10
-    plt.figure()
-    shap.summary_plot(shap_values, X_shap, max_display=10, show=False)
-    plt.title("SHAP Summary (Top 10) - XGBoost")
-    shap_path = os.path.join(out_dir, f"SHAP_summary_top10_{target}.png")
-    plt.savefig(shap_path, dpi=600, bbox_inches="tight")
-    plt.close()
-    print("Saved:", shap_path)
-
-    # 2) XGBoost 特征重要性 Top10（gain/weight 都可，这里用 model 自带 feature_importances_）
-    importances = pd.Series(xgb_clf.feature_importances_, index=feature_cols).sort_values(ascending=False)
-    top10 = importances.head(10)
-
-    fig, ax = plt.subplots(figsize=(7, 5.6))
-    top10.iloc[::-1].plot(kind="barh", ax=ax)
-    ax.set_title("XGBoost Feature Importance (Top 10)")
-    ax.set_xlabel("Importance")
+    # 保存 Precision-Recall 曲线
+    disp_pr = PrecisionRecallDisplay.from_estimator(
+        clf,
+        (X_test_svm if ptype == "svm" else X_test_imp_df),
+        y_test,
+        name=name
+    )
+    fig_pr, ax_pr = plt.subplots(figsize=(7, 7))
+    disp_pr.plot(ax=ax_pr)
+    ax_pr.set_title(f"{name} Precision-Recall Curve")
+    plt.grid(linestyle="--")
     plt.tight_layout()
-    fi_path = os.path.join(out_dir, f"XGB_feature_importance_top10_{target}.png")
-    plt.savefig(fi_path, dpi=600, bbox_inches="tight")
-    plt.close(fig)
-    print("Saved:", fi_path)
-else:
-    print("Skipping SHAP and Feature Importance: XGBoost or SHAP library not available.")
+    plt.savefig(os.path.join(out_dir, f"{name}_pr_curve.png"), dpi=300)
+    plt.close(fig_pr)
+    print(f"Saved: {name}_pr_curve.png")
 
-print("\n✅ All done. Outputs saved in:", out_dir)
+print("\n所有模型评估结果:")
+print(pd.DataFrame(results).round(4))
 ```
 
-#### SHAP Summary Plot (Top 10)
+### 5.3 评估结果可视化
 
-![SHAP Summary Plot](/images/portfolio/picu-outcome-prediction/shap_summary_top10.png){: .align-center}
-_SHAP 摘要图展示了最重要的10个特征及其对模型输出的影响方向和大小。_
+在 `/images` 文件夹中，我们应该有如下模型评估图，例如：
 
-#### XGBoost 特征重要性 (Top 10)
+#### SVM 模型评估
 
-![XGBoost Feature Importance](/images/portfolio/picu-outcome-prediction/xgb_feature_importance_top10.png){: .align-center}
-_XGBoost 特征重要性条形图直观地展示了模型在预测过程中最依赖的10个特征。_
+*   **SVM 混淆矩阵**
+    ![SVM Confusion Matrix](/images/SVM_confusion_matrix.png){: .align-center}
+
+*   **SVM ROC 曲线**
+    ![SVM ROC Curve](/images/SVM_roc_curve.png){: .align-center}
+
+*   **SVM Precision-Recall 曲线**
+    ![SVM Precision-Recall Curve](/images/SVM_pr_curve.png){: .align-center}
+
+#### Random Forest 模型评估
+
+*   **Random Forest 混淆矩阵**
+    ![RandomForest Confusion Matrix](/images/RF_confusion_matrix.png){: .align-center}
+
+*   **Random Forest ROC 曲线**
+    ![RandomForest ROC Curve](/images/RF_roc_curve.png){: .align-center}
+
+*   **Random Forest Precision-Recall 曲线**
+    ![RandomForest Precision-Recall Curve](/images/RF_pr_curve.png){: .align-center}
+
+#### XGBoost 模型评估
+
+*   **XGBoost 混淆矩阵**
+    ![XGBoost Confusion Matrix](/images/XGBoost_confusion_matrix.png){: .align-center}
+
+*   **XGBoost ROC 曲线**
+    ![XGBoost ROC Curve](/images/XGBoost_roc_curve.png){: .align-center}
+
+*   **XGBoost Precision-Recall 曲线**
+    ![XGBoost Precision-Recall Curve](/images/XGBoost_pr_curve.png){: .align-center}
+
+**分析说明**：
+- **混淆矩阵 (Confusion Matrix)**：直观展示了模型在测试集上的分类性能，包括真阳性 (TP)、真阴性 (TN)、假阳性 (FP) 和假阴性 (FN)。
+- **ROC 曲线 (Receiver Operating Characteristic Curve)**：通过绘制真阳性率 (TPR) 对假阳性率 (FPR)，评估模型在不同分类阈值下的性能。曲线下面积 (AUC) 越大，模型性能越好。
+- **Precision-Recall 曲线 (PR Curve)**：对于类别不平衡的数据集，PR 曲线能更好地反映模型的性能。曲线下面积 (AP) 越大，模型性能越好。
+
+---
 
 ## 结论与展望
 
-本项目成功地对 PICU 患者数据进行了全面的预处理、探索性分析和多模型预测。通过比较 SVM、随机森林和 XGBoost 模型，我们不仅评估了它们的预测性能，还利用 SHAP 值深入理解了 XGBoost 模型的决策机制和关键特征。
+本项目从 PICU 患者数据的读取、清洗、探索性分析到机器学习模型的建立和评估，构建了一个完整的预测分析流程。通过对性别、年龄和住院结局的统计分析，我们对患者群体有了初步的了解。在模型建立阶段，我们成功训练并评估了 SVM、随机森林和 XGBoost 等多种分类模型，并通过混淆矩阵、ROC 曲线和 PR 曲线全面展示了它们的性能。
 
-未来的工作可以包括：
-1. 探索更复杂的特征工程方法，如时间序列特征提取。
-2. 尝试深度学习模型，以捕捉数据中更复杂的非线性关系。
-3. 进行更广泛的超参数调优和模型集成，进一步提升预测性能。
-4. 结合临床领域知识，对模型的预测结果进行更深入的解释和验证，以促进其在实际医疗场景中的应用。
+**后续工作**：
+- **模型优化**：进一步进行超参数调优，尝试更复杂的集成学习方法。
+- **特征工程**：探索更丰富的临床特征，例如基于时间序列的特征提取。
+- **模型可解释性**：利用 SHAP、LIME 等工具深入理解模型决策，提高临床接受度。
+- **部署与监控**：将表现最佳的模型部署到实际环境中，并持续监控其性能。
+
+---
+
+## 技术栈
+
+- **语言**：Python 3.x
+- **核心库**：
+    - `pandas`：数据处理与分析
+    - `numpy`：数值计算
+    - `matplotlib`：数据可视化
+    - `scikit-learn`：机器学习（预处理、模型、评估）
+    - `xgboost`：梯度提升框架
+
+---
+
+## 相关链接
+
+- **GitHub 仓库**：[项目代码](https://github.com/mxh137/mxh137.github.io)
+- **数据集说明**：[数据文档](链接)
+- **相关论文**：[文献引用](链接)
+
+---
+
+*最后更新：2026-01-13*
+```
