@@ -525,28 +525,41 @@ print(pd.DataFrame(results).round(4))
 #### SVM 模型评估
 
 *   **SVM 混淆矩阵**
-    <img src="/images/CM_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM Confusion Matrix" style="width: 50%; margin: 0 auto; display: block;">
+    <div style="text-align: center;">
+        <img src="/images/CM_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM Confusion Matrix" style="width: 50%;">
+    </div>
 
 *   **SVM ROC 曲线**
-    <img src="/images/ROC_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM ROC Curve" style="width: 50%; margin: 0 auto; display: block;">
+    <div style="text-align: center;">
+        <img src="/images/ROC_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM ROC Curve" style="width: 50%;">
+    </div>
 
 
 #### Random Forest 模型评估
 
 *   **Random Forest 混淆矩阵**
-    <img src="/images/CM_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest Confusion Matrix" style="width: 50%; margin: 0 auto; display: block;">
+    <div style="text-align: center;">
+        <img src="/images/CM_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest Confusion Matrix" style="width: 50%;">
+    </div>
 
 *   **Random Forest ROC 曲线**
-    <img src="/images/ROC_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest ROC Curve" style="width: 50%; margin: 0 auto; display: block;">
+    <div style="text-align: center;">
+        <img src="/images/ROC_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest ROC Curve" style="width: 50%;">
+    </div>
 
 
 #### XGBoost 模型评估
 
 *   **XGBoost 混淆矩阵**
-    <img src="/images/CM_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost Confusion Matrix" style="width: 50%; margin: 0 auto; display: block;">
+    <div style="text-align: center;">
+        <img src="/images/CM_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost Confusion Matrix" style="width: 50%;">
+    </div>
 
 *   **XGBoost ROC 曲线**
-    <img src="/images/ROC_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost ROC Curve" style="width: 50%; margin: 0 auto; display: block;">
+    <div style="text-align: center;">
+        <img src="/images/ROC_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost ROC Curve" style="width: 50%;">
+    </div>
+
 
 **分析说明**：
 - **混淆矩阵 (Confusion Matrix)**：直观展示了模型在测试集上的分类性能，包括真阳性 (TP)、真阴性 (TN)、假阳性 (FP) 和假阴性 (FN)。
