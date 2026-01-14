@@ -520,45 +520,36 @@ print(pd.DataFrame(results).round(4))
 
 ### 5.3 评估结果可视化
 
-在 `/images` 文件夹中，我们应该有如下模型评估图，例如：
-
 #### SVM 模型评估
 
-*   **SVM 混淆矩阵**
-    <div style="text-align: center;">
-        <img src="/images/CM_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM Confusion Matrix" style="width: 50%;">
-    </div>
+**SVM 混淆矩阵**
 
-*   **SVM ROC 曲线**
-    <div style="text-align: center;">
-        <img src="/images/ROC_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM ROC Curve" style="width: 50%;">
-    </div>
+<img src="/images/CM_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM Confusion Matrix" width="50%">
 
+**SVM ROC 曲线**
+
+<img src="/images/ROC_SVM_HOSPITAL_EXPIRE_FLAG.png" alt="SVM ROC Curve" width="50%">
 
 #### Random Forest 模型评估
 
-*   **Random Forest 混淆矩阵**
-    <div style="text-align: center;">
-        <img src="/images/CM_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest Confusion Matrix" style="width: 50%;">
-    </div>
+**Random Forest 混淆矩阵**
 
-*   **Random Forest ROC 曲线**
-    <div style="text-align: center;">
-        <img src="/images/ROC_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest ROC Curve" style="width: 50%;">
-    </div>
+<img src="/images/CM_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest Confusion Matrix" width="50%">
 
+**Random Forest ROC 曲线**
+
+<img src="/images/ROC_RF_HOSPITAL_EXPIRE_FLAG.png" alt="RandomForest ROC Curve" width="50%">
 
 #### XGBoost 模型评估
 
-*   **XGBoost 混淆矩阵**
-    <div style="text-align: center;">
-        <img src="/images/CM_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost Confusion Matrix" style="width: 50%;">
-    </div>
+**XGBoost 混淆矩阵**
 
-*   **XGBoost ROC 曲线**
-    <div style="text-align: center;">
-        <img src="/images/ROC_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost ROC Curve" style="width: 50%;">
-    </div>
+<img src="/images/CM_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost Confusion Matrix" width="50%">
+
+**XGBoost ROC 曲线**
+
+<img src="/images/ROC_XGBoost_HOSPITAL_EXPIRE_FLAG.png" alt="XGBoost ROC Curve" width="50%">
+
 
 
 **分析说明**：
